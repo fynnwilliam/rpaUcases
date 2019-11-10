@@ -1,0 +1,64 @@
+open report.cvs
+go through and segment cardholders into:
+	aboutToExpire -> if today - expiry < 32 && >= 1
+		copy colum4, colum5 and colum7
+		append 'expiringDaysLeft'
+	expired -> if today - expiry == 0
+		copy colum4, colum5 and colum7
+	preDormant -> if today - lastTransaction >= 330 && <= 360
+		copy colum4, colum5 and colum7
+		append 'preDormantDays'
+	tierOne -> if today - lastTransaction == 360
+		copy colum4, colum5 and colum7
+		append 'tierOneDays'
+	tierTwo -> if today - lastTransaction > 360
+		copy colum4, colum5 and colum7
+		append 'daysGone'
+open the 'aboutToExpire' and send emails to each customer:
+	Dear [name],
+
+	Please your card, ***'lastFourDigits', is expiring in '$expiringDaysLeft' days; kindly 		visit the nearest branch for
+	more details.
+
+	Sincerely,
+	Stanbic Bank
+open the 'expired' and send emails to each customer:
+	Dear [name],
+
+	Please your card, ***'lastFourDigits', has expired; kindly visit the nearest branch for
+	more details.
+
+	Sincerely,
+	Stanbic Bank
+open the 'preDormant' and send emails to each customer:
+	Dear [name],
+
+	Please your card, ***'lastFourDigits', has not been used for '$preDormantDays' days; 		kindly visit the nearest branch for
+	any assistance.
+
+	Sincerely,
+	Stanbic Bank 	
+open the 'tierOne' and send emails to each customer:
+	Dear [name],
+
+	Please your card, ***'lastFourDigits', has not been used for '$tierOneDays' days; 		kindly visit the nearest branch for
+	any assistance.
+
+	Sincerely,
+	Stanbic Bank
+open the 'tierTwo' and send emails to each customer:
+	Dear [name],
+
+	Please your card, ***'lastFourDigits', has not been used for '$tierTwoDays' days; 		kindly visit the nearest branch for
+	any assistance.
+
+	Sincerely,
+	Stanbic Bank
+open dashboard and enter:
+	colum b
+	numberAllCards
+	numberPreDormant
+	numberTierOne
+	numberTierTwo
+	numberUntoched -> numberAllCards - (numberPreDormant + numberTierOne + numberTierTwo)
+

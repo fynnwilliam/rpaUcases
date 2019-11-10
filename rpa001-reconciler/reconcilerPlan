@@ -1,0 +1,38 @@
+open systemA
+	copy transactionId into a variable
+	copy transactionAmount into a variable
+open systemB
+	search with transactionId
+	compare transactionAmount to correspondingAmount
+	
+	if transactionId != correspondingAmount
+		append transactionId to 'red' list
+		copy list into redTransactions -> columB2 as active cell
+open systemB
+	set columA1 to empty
+	capture the current range into miscTransanctions
+	if A1 in redTransactions || B2 in miscTransanctions has content:
+		send an email to officer:
+			set counter varible to zero
+			set replaceText -> 'waiting'
+			set replaceText1 -> 'is a file that requires'
+			set replaceText2 -> 'are files that require'
+			foreach 'element' in the 'attachedList':
+				if B2 in 'element' has 'content':
+					attach
+					couter++
+			if counter = 1
+				replaceText = $replaceText1
+			if counter = 2
+				replaceText = #replaceText2
+			Dear [officerName],
+
+			I hope this finds you well.
+
+			Attached, 'replaceText' some attention - validation
+
+			Kindly assist.
+
+			Thank you,
+			bot :)
+

@@ -1,0 +1,524 @@
+open spreadsheet -> set path to report.cvs
+	getRange -> start from cell A2
+	create a table variable, 'task' and select it from the 		ouput menu
+	go for foreach loop and select foreach element in 		'task' table
+	iterate by rows
+	Set constant value Variables
+		fixed -> ${element[9]}
+		date format -> string to date
+			input -> el9
+			output -> createDate expiry
+			customize to d/m/y
+	Set constant value Variables
+		fixed -> ${element[3]}
+		date format -> string to date
+			input -> el3
+			output -> createDate lastTransaction
+			customize to d/m/y
+	Set constant value Variables
+		current -> today...
+			input ->
+			output -> createDate today
+			customize to d/m/y
+	//about to expire
+	If (today - expiry) < 32 && >= 1
+		Then:
+		call an Expression value Variable
+			create variable 'expiringEmail'
+			choose push(append)
+			value to append -> ${element[4]}
+		call an Expression value Variable
+			create variable 'expiringUsrname'
+			choose push(append)
+			value to append -> ${element[5]}
+		call an Expression value Variable
+			create variable 'expiringCardNum'
+			choose push(append)
+			value to append -> ${element[7]}
+		call an Expression value Variable
+			create variable 'expiringDaysLeft'
+			choose push(append)
+			value to append -> (today - expiry)
+	//expired
+	If (today - expiry) == 0
+		Then:
+		call an Expression value Variable
+			create variable 'expiredEmail'
+			choose push(append)
+			value to append -> ${element[4]}
+		call an Expression value Variable
+			create variable 'expiredUsrname'
+			choose push(append)
+			value to append -> ${element[5]}
+		call an Expression value Variable
+			create variable 'expiredCardNum'
+			choose push(append)
+			value to append -> ${element[7]}
+	//preDormant
+	If (today - lastTransaction) >= 330 && <= 360
+		Then:
+		call an Expression value Variable
+			create variable 'preDormantEmail'
+			choose push(append)
+			value to append -> ${element[4]}
+		call an Expression value Variable
+			create variable 'preDormantUsrname'
+			choose push(append)
+			value to append -> ${element[5]}
+		call an Expression value Variable
+			create variable 'preDormantCardNum'
+			choose push(append)
+			value to append -> ${element[7]}
+		call an Expression value Variable
+			create variable 'preDormantDays'
+			choose push(append)
+			value to append -> (today - 						lastTransaction)
+	//tierOne
+	If (today - lastTransaction) == 360
+		Then:
+		call an Expression value Variable
+			create variable 'tierOneEmail'
+			choose push(append)
+			value to append -> ${element[4]}
+		call an Expression value Variable
+			create variable 'tierOneUsrname'
+			choose push(append)
+			value to append -> ${element[5]}
+		call an Expression value Variable
+			create variable 'tierOneCardNum'
+			choose push(append)
+			value to append -> ${element[7]}
+		call an Expression value Variable
+			create variable 'tierOneDays'
+			choose push(append)
+			value to append -> (today - 						lastTransaction)
+	//tierTwo
+	If (today - lastTransaction) > 360
+		Then:
+		call an Expression value Variable
+			create variable 'tierTwoEmail'
+			choose push(append)
+			value to append -> ${element[4]}
+		call an Expression value Variable
+			create variable 'tierTwoUsrname'
+			choose push(append)
+			value to append -> ${element[5]}
+		call an Expression value Variable
+			create variable 'tierTwoCardNum'
+			choose push(append)
+			value to append -> ${element[7]}
+		call an Expression value Variable
+			create variable 'tierTwoDays'
+			choose push(append)
+			value to append -> (today - 						lastTransaction)
+//pasting details into various files...
+//aboutToExpire.xlsx --close file after last action...
+open spreadsheet -> set path to aboutToExpire.xlsx
+	setActiveCell -> A1
+	foreach loop and select foreach element in 		'expiringEmail'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> B1
+	foreach loop and select foreach element in 		'expiringUsrname'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> C1
+	foreach loop and select foreach element in 		'expiringCardNum'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> D1
+	foreach loop and select foreach element in 		'expiringDays'
+		set cell value -> cell below
+		variablename -> element
+//ready to send emails...
+	setRange -> startPoint A2
+	create a table variable, 'sendMail' and select it from 		the ouput menu
+	create a newLogin key&value
+	key -> fynn...
+	value -> passwd
+	call openWebsite
+	create a variable, 'website' -> https://accounts.google.com/signin/v2/identifier?service=mail&passive=true&rm=false&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ss=1&scc=1&ltmpl=default&ltmplcache=2&emr=1&osid=1&flowName=GlifWebSignIn&flowEntry=ServiceLogin
+	url -> 'website'
+	create 'usrname' -> yourKey
+	create 'passwd' -> yourValue
+	getWebElement:
+		mode -> set value
+		input -> 'usrname'
+		xpath -> emailXpath
+	getEnterKeyStroke -> [enter]
+	getWebElement:
+		mode -> set value
+		input -> 'passwd'
+		xpath -> passwdXpath
+	getEnterKeyStroke -> [enter]
+	callWaitForImage:
+		captureNewImage -> theComposeButton
+		waitUpTo -> 500ms
+		createVariable -> isImageFound -> type = bool
+		default value = false
+		underSave outcome to variable, set variable 			name to 'isImageFound'
+	***callForeach loop and select foreach element in 		'sendMail' table
+			iterate by rows
+	getMounseClick
+		image -> captureImage -> theComposeButton
+		button -> leftClick
+		type -> singleClick
+	getEnterKeyStroke:
+		textFromVariable / typeText
+		thenSelect $variable[1] / typeText --recpnt--
+		wait -> 300ms
+	getEnterKeyStroke -> [tab]
+	getAnotherEnterKeyStroke -> [tab]
+	createVariable 'subject' -> Card Information
+	getEnterKeyStrokes:
+		textFromVariable -> 'subject'
+	getEnterKeyStrokes -> [tab]
+	createVariable 'realMail' -> message
+	getEnterKeyStrokes:
+		textFromVariable -> 'realMail'
+	getEnterKeyStrokes -> [tab]
+	createVariable -> 'dateTime' -> currentDate
+	callConstantVariable:
+		selectVariable -> dateTime
+		value -> currentNow
+	callDateFormat:
+		createVariable 'formatedDateTime'
+		dateFormat -> convertDateToString
+		input -> 'dateTime'
+		output ->  'formatedDateTime'
+		customizeFormat
+	getEnterKeyStrokes 	
+		textFromVariable -> 'fromatedDateTime'
+	getEnterKeyStrokes -> [tab]
+	getEnterKeyStrokes -> [enter]
+	getWait...
+		pauseScriptExecution -> 300ms
+
+//expired.xlsx --close file after last action...
+open spreadsheet -> set path to aboutToExpire.xlsx
+	setActiveCell -> A1
+	foreach loop and select foreach element in 		'expiringEmail'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> B1
+	foreach loop and select foreach element in 		'expiringUsrname'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> C1
+	foreach loop and select foreach element in 		'expiringCardNum'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> D1
+	foreach loop and select foreach element in 		'expiringDays'
+		set cell value -> cell below
+		variablename -> element
+//ready to send emails...
+	setRange -> startPoint A2
+	create a table variable, 'sendMail' and select it from 		the ouput menu
+	create a newLogin key&value
+	key -> fynn...
+	value -> passwd
+	call openWebsite
+	create a variable, 'website' -> https://accounts.google.com/signin/v2/identifier?service=mail&passive=true&rm=false&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ss=1&scc=1&ltmpl=default&ltmplcache=2&emr=1&osid=1&flowName=GlifWebSignIn&flowEntry=ServiceLogin
+	url -> 'website'
+	create 'usrname' -> yourKey
+	create 'passwd' -> yourValue
+	getWebElement:
+		mode -> set value
+		input -> 'usrname'
+		xpath -> emailXpath
+	getEnterKeyStroke -> [enter]
+	getWebElement:
+		mode -> set value
+		input -> 'passwd'
+		xpath -> passwdXpath
+	getEnterKeyStroke -> [enter]
+	callWaitForImage:
+		captureNewImage -> theComposeButton
+		waitUpTo -> 500ms
+		createVariable -> isImageFound -> type = bool
+		default value = false
+		underSave outcome to variable, set variable 			name to 'isImageFound'
+	***callForeach loop and select foreach element in 		'sendMail' table
+			iterate by rows
+	getMounseClick
+		image -> captureImage -> theComposeButton
+		button -> leftClick
+		type -> singleClick
+	getEnterKeyStroke:
+		textFromVariable / typeText
+		thenSelect $variable[1] / typeText --recpnt--
+		wait -> 300ms
+	getEnterKeyStroke -> [tab]
+	getAnotherEnterKeyStroke -> [tab]
+	createVariable 'subject' -> Card Information
+	getEnterKeyStrokes:
+		textFromVariable -> 'subject'
+	getEnterKeyStrokes -> [tab]
+	createVariable 'realMail' -> message
+	getEnterKeyStrokes:
+		textFromVariable -> 'realMail'
+	getEnterKeyStrokes -> [tab]
+	createVariable -> 'dateTime' -> currentDate
+	callConstantVariable:
+		selectVariable -> dateTime
+		value -> currentNow
+	callDateFormat:
+		createVariable 'formatedDateTime'
+		dateFormat -> convertDateToString
+		input -> 'dateTime'
+		output ->  'formatedDateTime'
+		customizeFormat
+	getEnterKeyStrokes 	
+		textFromVariable -> 'fromatedDateTime'
+	getEnterKeyStrokes -> [tab]
+	getEnterKeyStrokes -> [enter]
+	getWait...
+		pauseScriptExecution -> 300ms
+
+//preDormant.xlsx --close file after last action...
+open spreadsheet -> set path to aboutToExpire.xlsx
+	setActiveCell -> A1
+	foreach loop and select foreach element in 		'expiringEmail'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> B1
+	foreach loop and select foreach element in 		'expiringUsrname'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> C1
+	foreach loop and select foreach element in 		'expiringCardNum'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> D1
+	foreach loop and select foreach element in 		'expiringDays'
+		set cell value -> cell below
+		variablename -> element
+//ready to send emails...
+	setRange -> startPoint A2
+	create a table variable, 'sendMail' and select it from 		the ouput menu
+	create a newLogin key&value
+	key -> fynn...
+	value -> passwd
+	call openWebsite
+	create a variable, 'website' -> https://accounts.google.com/signin/v2/identifier?service=mail&passive=true&rm=false&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ss=1&scc=1&ltmpl=default&ltmplcache=2&emr=1&osid=1&flowName=GlifWebSignIn&flowEntry=ServiceLogin
+	url -> 'website'
+	create 'usrname' -> yourKey
+	create 'passwd' -> yourValue
+	getWebElement:
+		mode -> set value
+		input -> 'usrname'
+		xpath -> emailXpath
+	getEnterKeyStroke -> [enter]
+	getWebElement:
+		mode -> set value
+		input -> 'passwd'
+		xpath -> passwdXpath
+	getEnterKeyStroke -> [enter]
+	callWaitForImage:
+		captureNewImage -> theComposeButton
+		waitUpTo -> 500ms
+		createVariable -> isImageFound -> type = bool
+		default value = false
+		underSave outcome to variable, set variable 			name to 'isImageFound'
+	***callForeach loop and select foreach element in 		'sendMail' table
+			iterate by rows
+	getMounseClick
+		image -> captureImage -> theComposeButton
+		button -> leftClick
+		type -> singleClick
+	getEnterKeyStroke:
+		textFromVariable / typeText
+		thenSelect $variable[1] / typeText --recpnt--
+		wait -> 300ms
+	getEnterKeyStroke -> [tab]
+	getAnotherEnterKeyStroke -> [tab]
+	createVariable 'subject' -> Card Information
+	getEnterKeyStrokes:
+		textFromVariable -> 'subject'
+	getEnterKeyStrokes -> [tab]
+	createVariable 'realMail' -> message
+	getEnterKeyStrokes:
+		textFromVariable -> 'realMail'
+	getEnterKeyStrokes -> [tab]
+	createVariable -> 'dateTime' -> currentDate
+	callConstantVariable:
+		selectVariable -> dateTime
+		value -> currentNow
+	callDateFormat:
+		createVariable 'formatedDateTime'
+		dateFormat -> convertDateToString
+		input -> 'dateTime'
+		output ->  'formatedDateTime'
+		customizeFormat
+	getEnterKeyStrokes 	
+		textFromVariable -> 'fromatedDateTime'
+	getEnterKeyStrokes -> [tab]
+	getEnterKeyStrokes -> [enter]
+	getWait...
+		pauseScriptExecution -> 300ms
+
+//tierOne.xlsx --close file after last action...
+open spreadsheet -> set path to aboutToExpire.xlsx
+	setActiveCell -> A1
+	foreach loop and select foreach element in 		'expiringEmail'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> B1
+	foreach loop and select foreach element in 		'expiringUsrname'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> C1
+	foreach loop and select foreach element in 		'expiringCardNum'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> D1
+	foreach loop and select foreach element in 		'expiringDays'
+		set cell value -> cell below
+		variablename -> element
+//ready to send emails...
+	setRange -> startPoint A2
+	create a table variable, 'sendMail' and select it from 		the ouput menu
+	create a newLogin key&value
+	key -> fynn...
+	value -> passwd
+	call openWebsite
+	create a variable, 'website' -> https://accounts.google.com/signin/v2/identifier?service=mail&passive=true&rm=false&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ss=1&scc=1&ltmpl=default&ltmplcache=2&emr=1&osid=1&flowName=GlifWebSignIn&flowEntry=ServiceLogin
+	url -> 'website'
+	create 'usrname' -> yourKey
+	create 'passwd' -> yourValue
+	getWebElement:
+		mode -> set value
+		input -> 'usrname'
+		xpath -> emailXpath
+	getEnterKeyStroke -> [enter]
+	getWebElement:
+		mode -> set value
+		input -> 'passwd'
+		xpath -> passwdXpath
+	getEnterKeyStroke -> [enter]
+	callWaitForImage:
+		captureNewImage -> theComposeButton
+		waitUpTo -> 500ms
+		createVariable -> isImageFound -> type = bool
+		default value = false
+		underSave outcome to variable, set variable 			name to 'isImageFound'
+	***callForeach loop and select foreach element in 		'sendMail' table
+			iterate by rows
+	getMounseClick
+		image -> captureImage -> theComposeButton
+		button -> leftClick
+		type -> singleClick
+	getEnterKeyStroke:
+		textFromVariable / typeText
+		thenSelect $variable[1] / typeText --recpnt--
+		wait -> 300ms
+	getEnterKeyStroke -> [tab]
+	getAnotherEnterKeyStroke -> [tab]
+	createVariable 'subject' -> Card Information
+	getEnterKeyStrokes:
+		textFromVariable -> 'subject'
+	getEnterKeyStrokes -> [tab]
+	createVariable 'realMail' -> message
+	getEnterKeyStrokes:
+		textFromVariable -> 'realMail'
+	getEnterKeyStrokes -> [tab]
+	createVariable -> 'dateTime' -> currentDate
+	callConstantVariable:
+		selectVariable -> dateTime
+		value -> currentNow
+	callDateFormat:
+		createVariable 'formatedDateTime'
+		dateFormat -> convertDateToString
+		input -> 'dateTime'
+		output ->  'formatedDateTime'
+		customizeFormat
+	getEnterKeyStrokes 	
+		textFromVariable -> 'fromatedDateTime'
+	getEnterKeyStrokes -> [tab]
+	getEnterKeyStrokes -> [enter]
+	getWait...
+		pauseScriptExecution -> 300ms
+
+//tierTwo.xlsx --close file after last action...
+open spreadsheet -> set path to aboutToExpire.xlsx
+	setActiveCell -> A1
+	foreach loop and select foreach element in 		'expiringEmail'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> B1
+	foreach loop and select foreach element in 		'expiringUsrname'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> C1
+	foreach loop and select foreach element in 		'expiringCardNum'
+		set cell value -> cell below
+		variablename -> element
+	setActiveCell -> D1
+	foreach loop and select foreach element in 		'expiringDays'
+		set cell value -> cell below
+		variablename -> element
+//ready to send emails...
+	setRange -> startPoint A2
+	create a table variable, 'sendMail' and select it from 		the ouput menu
+	create a newLogin key&value
+	key -> fynn...
+	value -> passwd
+	call openWebsite
+	create a variable, 'website' -> https://accounts.google.com/signin/v2/identifier?service=mail&passive=true&rm=false&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ss=1&scc=1&ltmpl=default&ltmplcache=2&emr=1&osid=1&flowName=GlifWebSignIn&flowEntry=ServiceLogin
+	url -> 'website'
+	create 'usrname' -> yourKey
+	create 'passwd' -> yourValue
+	getWebElement:
+		mode -> set value
+		input -> 'usrname'
+		xpath -> emailXpath
+	getEnterKeyStroke -> [enter]
+	getWebElement:
+		mode -> set value
+		input -> 'passwd'
+		xpath -> passwdXpath
+	getEnterKeyStroke -> [enter]
+	callWaitForImage:
+		captureNewImage -> theComposeButton
+		waitUpTo -> 500ms
+		createVariable -> isImageFound -> type = bool
+		default value = false
+		underSave outcome to variable, set variable 			name to 'isImageFound'
+	***callForeach loop and select foreach element in 		'sendMail' table
+			iterate by rows
+	getMounseClick
+		image -> captureImage -> theComposeButton
+		button -> leftClick
+		type -> singleClick
+	getEnterKeyStroke:
+		textFromVariable / typeText
+		thenSelect $variable[1] / typeText --recpnt--
+		wait -> 300ms
+	getEnterKeyStroke -> [tab]
+	getAnotherEnterKeyStroke -> [tab]
+	createVariable 'subject' -> Card Information
+	getEnterKeyStrokes:
+		textFromVariable -> 'subject'
+	getEnterKeyStrokes -> [tab]
+	createVariable 'realMail' -> message
+	getEnterKeyStrokes:
+		textFromVariable -> 'realMail'
+	getEnterKeyStrokes -> [tab]
+	createVariable -> 'dateTime' -> currentDate
+	callConstantVariable:
+		selectVariable -> dateTime
+		value -> currentNow
+	callDateFormat:
+		createVariable 'formatedDateTime'
+		dateFormat -> convertDateToString
+		input -> 'dateTime'
+		output ->  'formatedDateTime'
+		customizeFormat
+	getEnterKeyStrokes 	
+		textFromVariable -> 'fromatedDateTime'
+	getEnterKeyStrokes -> [tab]
+	getEnterKeyStrokes -> [enter]
+	getWait...
+		pauseScriptExecution -> 300ms
+
